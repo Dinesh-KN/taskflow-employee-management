@@ -8,10 +8,14 @@ const requiredEnvVars = [
   'MONGO_URI',
   'CLIENT_ORIGIN',
   'BCRYPT_SALT_ROUNDS',
-  'ACCESS_TOKEN_SECRET',
-  'ACCESS_TOKEN_EXPIRES_IN',
-  'REFRESH_TOKEN_SECRET',
-  'REFRESH_TOKEN_EXPIRES_IN',
+  'JWT_ACCESS_SECRET',
+  'JWT_ACCESS_EXPIRES_IN',
+  'JWT_REFRESH_SECRET',
+  'JWT_REFRESH_EXPIRES_IN',
+  'SEED_ADMIN_FIRST_NAME',
+  'SEED_ADMIN_LAST_NAME',
+  'SEED_ADMIN_EMAIL',
+  'SEED_ADMIN_PASSWORD',
 ];
 
 requiredEnvVars.forEach((key) => {
@@ -29,9 +33,14 @@ export const env = {
 
   bcryptSaltRounds: Number(process.env.BCRYPT_SALT_ROUNDS),
 
-  accessTokenSecret: process.env.ACCESS_TOKEN_SECRET,
-  accessTokenExpiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN,
+  accessTokenSecret: process.env.JWT_ACCESS_SECRET,
+  accessTokenExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN,
 
-  refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET,
-  refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
+  refreshTokenSecret: process.env.JWT_REFRESH_SECRET,
+  refreshTokenExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
+
+  seedAdminFirstName: process.env.SEED_ADMIN_FIRST_NAME,
+  seedAdminLastName: process.env.SEED_ADMIN_LAST_NAME,
+  seedAdminEmail: process.env.SEED_ADMIN_EMAIL,
+  seedAdminPassword: process.env.SEED_ADMIN_PASSWORD,
 };
