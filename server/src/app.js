@@ -15,7 +15,7 @@ app.use(
   cors({
     origin: env.clientOrigin,
     credentials: true,
-  })
+  }),
 );
 
 app.use(express.json({ limit: '10kb' }));
