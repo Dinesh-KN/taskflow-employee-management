@@ -7,6 +7,9 @@ import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 import apiRoutes from './routes/index.js';
 
+import { globalErrorHandler } from './middleware/error.middleware.js';
+import { notFound } from './middleware/not-found.middleware.js';
+
 const app = express();
 
 app.use(helmet());
@@ -27,5 +30,8 @@ if (env.nodeEnv === 'development') {
 }
 
 app.use('/api/v1', apiRoutes);
+
+app.use(notFound);
+app.use(globalErrorHandler);
 
 export default app;
