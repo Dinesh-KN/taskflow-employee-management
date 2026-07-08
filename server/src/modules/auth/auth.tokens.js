@@ -28,6 +28,14 @@ export const generateRefreshToken = (user) => {
   );
 };
 
+export const verifyAccessToken = (token) => {
+  return jwt.verify(token, env.accessTokenSecret);
+};
+
+export const verifyRefreshToken = (token) => {
+  return jwt.verify(token, env.refreshTokenSecret);
+};
+
 export const hashToken = (token) => {
   return crypto.createHash('sha256').update(token).digest('hex');
 };

@@ -4,6 +4,7 @@ import { User } from '../users/user.model.js';
 import {
   generateAccessToken,
   generateRefreshToken,
+  verifyRefreshToken,
   hashToken,
 } from './auth.tokens.js';
 
@@ -41,4 +42,42 @@ export const loginUser = async ({ email, password }) => {
     refreshToken,
     user,
   };
+};
+
+export const issueNewAccessToken = async (refreshToken) => {
+  if (!refreshToken) {
+    throw new AppError('Refresh token is required', 401);
+  }
+
+  let decoded;
+
+  try {
+    decoded = verifyRefreshToken(refreshToken);
+  } catch {
+    throw new AppError('Invalid or expired refresh token', 401);
+  }
+
+  const refreshTokenHash = hashToken(refreshToken);
+
+  const user = await User.findById(decoded.sub).select('+refreshTokens');
+
+  if (!user) {
+    throw new AppError('Invalid refresh token', 401);
+  }
+
+  if (user.status !== USER_STATUS.ACTIVE) {
+    throw new AppError('Your account is not active. Please contact admin.', 403);
+  }
+
+  const tokenExists = user.refreshTokens.some(
+    (storedToken) => storedToken.tokenHash === refreshTokenHash
+  );
+
+  if (!tokenExists) {
+    throw new AppError('Invalid refresh token', 401);
+  }
+
+  const accessToken = generateAccessToken(user);
+
+  return { accessToken };
 };
