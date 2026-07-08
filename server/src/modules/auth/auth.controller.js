@@ -1,5 +1,5 @@
 import { getRefreshTokenCookieOptions } from './auth.cookie.js';
-import { loginUser, issueNewAccessToken } from './auth.service.js';
+import { loginUser, issueNewAccessToken, logoutUser } from './auth.service.js';
 
 export const login = async (req, res) => {
   const { email, password } = req.validated.body;
@@ -32,5 +32,18 @@ export const refresh = async (req, res) => {
     data: {
       accessToken,
     },
+  });
+};
+
+export const logout = async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+
+  await logoutUser(refreshToken);
+
+  res.clearCookie('refreshToken', getRefreshTokenCookieOptions());
+
+  res.status(200).json({
+    success: true,
+    message: 'Logout successful',
   });
 };
