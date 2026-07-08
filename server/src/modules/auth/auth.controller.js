@@ -1,5 +1,10 @@
 import { getRefreshTokenCookieOptions } from './auth.cookie.js';
-import { loginUser, issueNewAccessToken, logoutUser } from './auth.service.js';
+import {
+  loginUser,
+  issueNewAccessToken,
+  logoutUser,
+  getCurrentUser,
+} from './auth.service.js';
 
 export const login = async (req, res) => {
   const { email, password } = req.validated.body;
@@ -45,5 +50,17 @@ export const logout = async (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Logout successful',
+  });
+};
+
+export const getMe = async (req, res) => {
+  const { user } = await getCurrentUser(req.user.id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Current user fetched successfully',
+    data: {
+      user,
+    },
   });
 };
