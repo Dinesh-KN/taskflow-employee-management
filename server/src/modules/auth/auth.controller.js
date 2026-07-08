@@ -5,6 +5,7 @@ import {
   logoutUser,
   getCurrentUser,
   updateCurrentUserPassword,
+  resetUserPassword,
 } from './auth.service.js';
 
 export const login = async (req, res) => {
@@ -80,5 +81,20 @@ export const changePassword = async (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Password changed successfully. Please login again.',
+  });
+};
+
+export const resetPassword = async (req, res) => {
+  const { userId } = req.validated.params;
+
+  const { temporaryPassword, expiresAt } = await resetUserPassword(userId);
+
+  res.status(200).json({
+    success: true,
+    message: 'Password reset successfully',
+    data: {
+      temporaryPassword,
+      expiresAt,
+    },
   });
 };

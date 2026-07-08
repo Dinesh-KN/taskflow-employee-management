@@ -8,6 +8,7 @@ const requiredEnvVars = [
   'MONGO_URI',
   'CLIENT_ORIGIN',
   'BCRYPT_SALT_ROUNDS',
+  'TEMP_PASSWORD_EXPIRES_IN_HOURS',
   'JWT_ACCESS_SECRET',
   'JWT_ACCESS_EXPIRES_IN',
   'JWT_REFRESH_SECRET',
@@ -32,6 +33,10 @@ export const env = {
   clientOrigin: process.env.CLIENT_ORIGIN,
 
   bcryptSaltRounds: Number(process.env.BCRYPT_SALT_ROUNDS),
+
+  tempPasswordExpiresInHours: Number(
+    process.env.TEMP_PASSWORD_EXPIRES_IN_HOURS,
+  ),
 
   accessTokenSecret: process.env.JWT_ACCESS_SECRET,
   accessTokenExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN,

@@ -79,6 +79,11 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
 
+    temporaryPasswordExpiresAt: {
+      type: Date,
+      select: false,
+    },
+
     refreshTokens: {
       type: [refreshTokenSchema],
       default: [],

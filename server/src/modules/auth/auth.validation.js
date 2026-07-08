@@ -40,3 +40,9 @@ export const changePasswordSchema = z.object({
       path: ['confirmPassword'],
     }),
 });
+
+export const resetPasswordSchema = z.object({
+  params: z.object({
+    userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID'),
+  }),
+});
