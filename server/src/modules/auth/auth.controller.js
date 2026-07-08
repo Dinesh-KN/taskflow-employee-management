@@ -4,6 +4,7 @@ import {
   issueNewAccessToken,
   logoutUser,
   getCurrentUser,
+  updateCurrentUserPassword,
 } from './auth.service.js';
 
 export const login = async (req, res) => {
@@ -62,5 +63,22 @@ export const getMe = async (req, res) => {
     data: {
       user,
     },
+  });
+};
+
+export const changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.validated.body;
+
+  await updateCurrentUserPassword({
+    userId: req.user.id,
+    currentPassword,
+    newPassword,
+  });
+
+  res.clearCookie('refreshToken', getRefreshTokenCookieOptions());
+
+  res.status(200).json({
+    success: true,
+    message: 'Password changed successfully. Please login again.',
   });
 };

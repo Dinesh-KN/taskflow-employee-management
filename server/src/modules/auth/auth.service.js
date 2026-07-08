@@ -111,3 +111,27 @@ export const getCurrentUser = async (userId) => {
 
   return { user };
 };
+
+export const updateCurrentUserPassword = async ({
+  userId,
+  currentPassword,
+  newPassword,
+}) => {
+  const user = await User.findById(userId).select('+password +refreshTokens');
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  const isPasswordValid = await user.comparePassword(currentPassword);
+
+  if (!isPasswordValid) {
+    throw new AppError('Current password is incorrect', 400);
+  }
+
+  user.password = newPassword;
+  user.mustChangePassword = false;
+  user.refreshTokens = [];
+
+  await user.save();
+};
