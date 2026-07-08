@@ -66,11 +66,14 @@ export const issueNewAccessToken = async (refreshToken) => {
   }
 
   if (user.status !== USER_STATUS.ACTIVE) {
-    throw new AppError('Your account is not active. Please contact admin.', 403);
+    throw new AppError(
+      'Your account is not active. Please contact admin.',
+      403,
+    );
   }
 
   const tokenExists = user.refreshTokens.some(
-    (storedToken) => storedToken.tokenHash === refreshTokenHash
+    (storedToken) => storedToken.tokenHash === refreshTokenHash,
   );
 
   if (!tokenExists) {
@@ -80,4 +83,21 @@ export const issueNewAccessToken = async (refreshToken) => {
   const accessToken = generateAccessToken(user);
 
   return { accessToken };
+};
+
+export const logoutUser = async (refreshToken) => {
+  if (!refreshToken) {
+    return;
+  }
+
+  const refreshTokenHash = hashToken(refreshToken);
+
+  await User.updateOne(
+    { 'refreshTokens.tokenHash': refreshTokenHash },
+    {
+      $pull: {
+        refreshTokens: { tokenHash: refreshTokenHash },
+      },
+    },
+  );
 };
