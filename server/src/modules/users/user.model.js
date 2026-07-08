@@ -107,9 +107,13 @@ userSchema.virtual('fullName').get(function () {
 userSchema.set('toJSON', {
   virtuals: true,
   transform(_doc, ret) {
+    ret.id = ret._id.toString();
+
+    delete ret._id;
     delete ret.password;
     delete ret.refreshTokens;
     delete ret.__v;
+
     return ret;
   },
 });
