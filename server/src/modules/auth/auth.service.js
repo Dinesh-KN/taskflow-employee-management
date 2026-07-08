@@ -1,3 +1,4 @@
+import { env } from '../../config/env.js';
 import { AppError } from '../../shared/errors/app-error.js';
 import { USER_STATUS } from '../../shared/constants/user.constants.js';
 import { User } from '../users/user.model.js';
@@ -7,6 +8,7 @@ import {
   verifyRefreshToken,
   hashToken,
 } from './auth.tokens.js';
+import { generateTemporaryPassword } from '../../shared/utils/generate-password.js';
 
 export const loginUser = async ({ email, password }) => {
   const user = await User.findOne({ email }).select('+password +refreshTokens');
@@ -26,6 +28,17 @@ export const loginUser = async ({ email, password }) => {
 
   if (!isPasswordValid) {
     throw new AppError('Invalid email or password', 401);
+  }
+
+  if (
+    user.mustChangePassword &&
+    user.temporaryPasswordExpiresAt &&
+    user.temporaryPasswordExpiresAt < new Date()
+  ) {
+    throw new AppError(
+      'Temporary password has expired. Please contact admin.',
+      403,
+    );
   }
 
   const accessToken = generateAccessToken(user);
@@ -131,7 +144,34 @@ export const updateCurrentUserPassword = async ({
 
   user.password = newPassword;
   user.mustChangePassword = false;
+  user.temporaryPasswordExpiresAt = undefined;
   user.refreshTokens = [];
 
   await user.save();
+};
+
+export const resetUserPassword = async (userId) => {
+  const user = await User.findById(userId).select('+refreshTokens');
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  const temporaryPassword = generateTemporaryPassword();
+
+  const expiresAt = new Date(
+    Date.now() + env.tempPasswordExpiresInHours * 60 * 60 * 1000,
+  );
+
+  user.password = temporaryPassword;
+  user.mustChangePassword = true;
+  user.temporaryPasswordExpiresAt = expiresAt;
+  user.refreshTokens = [];
+
+  await user.save();
+
+  return {
+    temporaryPassword,
+    expiresAt,
+  };
 };
