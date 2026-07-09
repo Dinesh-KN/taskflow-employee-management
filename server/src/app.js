@@ -9,6 +9,8 @@ import apiRoutes from './routes/index.js';
 
 import { globalErrorHandler } from './middleware/error.middleware.js';
 import { notFound } from './middleware/not-found.middleware.js';
+import { globalRateLimiter } from './middleware/rate-limit.middleware.js';
+import { sanitizeRequest } from './middleware/sanitize.middleware.js';
 
 const app = express();
 
@@ -29,6 +31,8 @@ if (env.nodeEnv === 'development') {
   app.use(morgan('dev'));
 }
 
+app.use(sanitizeRequest);
+app.use('/api', globalRateLimiter);
 app.use('/api/v1', apiRoutes);
 
 app.use(notFound);
