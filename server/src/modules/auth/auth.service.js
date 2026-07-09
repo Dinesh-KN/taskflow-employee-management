@@ -93,9 +93,23 @@ export const issueNewAccessToken = async (refreshToken) => {
     throw new AppError('Invalid refresh token', 401);
   }
 
-  const accessToken = generateAccessToken(user);
+  user.refreshTokens = user.refreshTokens.filter(
+    (storedToken) => storedToken.tokenHash !== refreshTokenHash,
+  );
 
-  return { accessToken };
+  const newAccessToken = generateAccessToken(user);
+  const newRefreshToken = generateRefreshToken(user);
+
+  user.refreshTokens.push({
+    tokenHash: hashToken(newRefreshToken),
+  });
+
+  await user.save();
+
+  return {
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken,
+  };
 };
 
 export const logoutUser = async (refreshToken) => {
