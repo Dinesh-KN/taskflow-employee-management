@@ -31,7 +31,10 @@ export const login = async (req, res) => {
 export const refresh = async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
 
-  const { accessToken } = await issueNewAccessToken(refreshToken);
+  const { accessToken, refreshToken: newRefreshToken } =
+    await issueNewAccessToken(refreshToken);
+
+  res.cookie('refreshToken', newRefreshToken, getRefreshTokenCookieOptions());
 
   res.status(200).json({
     success: true,
