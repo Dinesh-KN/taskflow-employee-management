@@ -40,11 +40,20 @@ export const authenticate = async (req, _res, next) => {
 export const authorize =
   (...allowedRoles) =>
   (req, _res, next) => {
+    if (!allowedRoles.length) {
+      throw new AppError('Allowed roles must be provided', 500);
+    }
+
+    if (!req.user) {
+      throw new AppError('Authentication required before authorization', 401);
+    }
+
     if (!allowedRoles.includes(req.user.role)) {
       throw new AppError(
         'You do not have permission to perform this action',
         403,
       );
     }
+
     next();
   };
