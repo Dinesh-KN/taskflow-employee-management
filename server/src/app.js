@@ -31,8 +31,7 @@ if (env.nodeEnv === 'development') {
   app.use(morgan('dev'));
 }
 
-app.use(sanitizeRequest);
-app.use('/api', globalRateLimiter);
+app.use('/api', globalRateLimiter, sanitizeRequest);
 app.use('/api/v1', apiRoutes);
 
 app.use(notFound);
