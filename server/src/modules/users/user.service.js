@@ -31,7 +31,7 @@ export const createUserAccount = async ({
   };
 };
 
-export const findUsers = async ({
+export const listUsers = async ({
   search,
   role,
   status,
@@ -64,18 +64,22 @@ export const findUsers = async ({
     User.countDocuments(filter),
   ]);
 
+  const totalPages = Math.ceil(totalUsers / limit);
+
   return {
     users,
     pagination: {
-      totalUsers,
-      currentPage: page,
-      totalPages: Math.ceil(totalUsers / limit),
+      page,
       limit,
+      totalItems: totalUsers,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
     },
   };
 };
 
-export const findUserById = async (userId) => {
+export const getUserDetails = async (userId) => {
   const user = await User.findById(userId);
 
   if (!user) {
@@ -85,20 +89,37 @@ export const findUserById = async (userId) => {
   return { user };
 };
 
-export const updateUserProfileById = async (userId, updateData) => {
-  const user = await User.findByIdAndUpdate(userId, updateData, {
-    new: true,
-    runValidators: true,
-  });
+export const updateUserProfile = async (userId, updateData) => {
+  const user = await User.findById(userId);
 
   if (!user) {
     throw new AppError('User not found', 404);
   }
 
-  return { user };
+  const fieldsToCheck = ['firstName', 'lastName'];
+
+  const hasChanges = fieldsToCheck.some(
+    (field) =>
+      Object.hasOwn(updateData, field) && updateData[field] !== user[field],
+  );
+
+  if (!hasChanges) {
+    return {
+      user,
+      updated: false,
+    };
+  }
+
+  Object.assign(user, updateData);
+  await user.save();
+
+  return {
+    user,
+    updated: true,
+  };
 };
 
-export const updateUserEmailById = async (userId, email) => {
+export const changeUserEmail = async (userId, email) => {
   const user = await User.findById(userId).select('+refreshTokens');
 
   if (!user) {
@@ -123,28 +144,43 @@ export const updateUserEmailById = async (userId, email) => {
   return { user, emailChanged: true };
 };
 
-export const updateUserRoleById = async (userId, role) => {
-  const user = await User.findByIdAndUpdate(
-    userId,
-    { role },
-    {
-      new: true,
-      runValidators: true,
-    },
-  );
+export const changeUserRole = async (userId, role) => {
+  const user = await User.findById(userId).select('+refreshTokens');
 
   if (!user) {
     throw new AppError('User not found', 404);
   }
 
-  return { user };
+  if (user.role === role) {
+    return {
+      user,
+      roleChanged: false,
+    };
+  }
+
+  user.role = role;
+  user.refreshTokens = [];
+
+  await user.save();
+
+  return {
+    user,
+    roleChanged: true,
+  };
 };
 
-export const updateUserStatusById = async (userId, status) => {
+export const changeUserStatus = async (userId, status) => {
   const user = await User.findById(userId).select('+refreshTokens');
 
   if (!user) {
     throw new AppError('User not found', 404);
+  }
+
+  if (user.status === status) {
+    return {
+      user,
+      statusChanged: false,
+    };
   }
 
   user.status = status;
@@ -152,5 +188,8 @@ export const updateUserStatusById = async (userId, status) => {
 
   await user.save();
 
-  return { user };
+  return {
+    user,
+    statusChanged: true,
+  };
 };

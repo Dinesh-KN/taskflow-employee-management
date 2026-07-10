@@ -54,7 +54,10 @@ export const updateUserSchema = z.object({
       firstName: z.string().trim().min(2).max(50).optional(),
       lastName: z.string().trim().max(50).optional(),
     })
-    .strict(),
+    .strict()
+    .refine((data) => Object.keys(data).length > 0, {
+      message: 'At least one field must be provided',
+    }),
 });
 
 export const updateUserEmailSchema = z.object({

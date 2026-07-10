@@ -5,8 +5,8 @@ import { authenticate, authorize } from '../auth/auth.middleware.js';
 import { USER_ROLES } from '../../shared/constants/user.constants.js';
 import {
   createUser,
-  getUserById,
   getUsers,
+  getUser,
   updateUser,
   updateUserEmail,
   updateUserRole,
@@ -29,7 +29,7 @@ router.use(authorize(USER_ROLES.ADMIN));
 
 router.post('/', validate(createUserSchema), createUser);
 router.get('/', validate(getUsersSchema), getUsers);
-router.get('/:userId', validate(userIdParamSchema), getUserById);
+router.get('/:userId', validate(userIdParamSchema), getUser);
 router.patch('/:userId', validate(updateUserSchema), updateUser);
 router.patch(
   '/:userId/email',
