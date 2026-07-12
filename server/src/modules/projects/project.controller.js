@@ -4,6 +4,7 @@ import {
   getProjectDetails,
   updateProjectDetails,
   changeProjectStatus,
+  changeProjectLead,
   assignProjectMembers,
 } from './project.service.js';
 
@@ -92,6 +93,28 @@ export const updateProjectStatus = async (req, res) => {
     data: {
       project,
       changed,
+    },
+  });
+};
+
+export const updateProjectLead = async (req, res) => {
+  const { projectId } = req.validated.params;
+  const { projectLead } = req.validated.body;
+
+  const result = await changeProjectLead({
+    projectId,
+    projectLeadId: projectLead,
+    currentUser: req.user,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: result.changed
+      ? 'Project lead updated successfully'
+      : 'Project lead is already assigned',
+    data: {
+      project: result.project,
+      changed: result.changed,
     },
   });
 };

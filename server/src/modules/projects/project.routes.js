@@ -9,15 +9,17 @@ import {
   getProject,
   updateProject,
   updateProjectStatus,
+  updateProjectLead,
   updateProjectMembers,
 } from './project.controller.js';
 import {
   createProjectSchema,
   getProjectsSchema,
   projectIdParamSchema,
-  updateProjectMembersSchema,
   updateProjectSchema,
   updateProjectStatusSchema,
+  updateProjectLeadSchema,
+  updateProjectMembersSchema,
 } from './project.validation.js';
 
 const router = express.Router();
@@ -47,6 +49,13 @@ router.patch(
   authorize(USER_ROLES.ADMIN, USER_ROLES.MANAGER),
   validate(updateProjectStatusSchema),
   updateProjectStatus,
+);
+
+router.patch(
+  '/:projectId/lead',
+  authorize(USER_ROLES.ADMIN, USER_ROLES.MANAGER),
+  validate(updateProjectLeadSchema),
+  updateProjectLead,
 );
 
 router.patch(

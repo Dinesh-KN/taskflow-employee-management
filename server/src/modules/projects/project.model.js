@@ -63,6 +63,12 @@ const projectSchema = new mongoose.Schema(
       immutable: true,
     },
 
+    projectLead: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Project lead is required'],
+    },
+
     members: {
       type: [
         {
@@ -81,7 +87,7 @@ const projectSchema = new mongoose.Schema(
 projectSchema.index({ normalizedName: 1 }, { unique: true });
 
 projectSchema.index({ members: 1, status: 1, dueDate: 1 });
-projectSchema.index({ createdBy: 1, status: 1, dueDate: 1 });
+projectSchema.index({ projectLead: 1, status: 1, dueDate: 1 });
 
 projectSchema.pre('validate', function () {
   if (this.isModified('name') && typeof this.name === 'string') {

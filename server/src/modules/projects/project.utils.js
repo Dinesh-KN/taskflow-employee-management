@@ -1,5 +1,9 @@
 import { AppError } from '../../shared/errors/app-error.js';
-import { USER_STATUS } from '../../shared/constants/user.constants.js';
+
+import {
+  USER_STATUS,
+  USER_ROLES,
+} from '../../shared/constants/user.constants.js';
 import { User } from '../users/user.model.js';
 
 export const cleanProjectName = (name = '') => {
@@ -48,6 +52,22 @@ export const validateActiveUsers = async (userIds) => {
   return uniqueUserIds;
 };
 
+export const validateProjectLead = async (userId) => {
+  const projectLead = await User.findOne({
+    _id: userId,
+    status: USER_STATUS.ACTIVE,
+    role: {
+      $in: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+    },
+  }).select('_id');
+
+  if (!projectLead) {
+    throw new AppError('Project lead must be an active admin or manager', 400);
+  }
+
+  return projectLead._id;
+};
+
 export const validateProjectDates = ({ startDate, dueDate }) => {
   if (startDate && dueDate && new Date(dueDate) < new Date(startDate)) {
     throw new AppError('Due date cannot be before start date', 400);
@@ -57,6 +77,10 @@ export const validateProjectDates = ({ startDate, dueDate }) => {
 export const projectPopulateOptions = [
   {
     path: 'createdBy',
+    select: 'firstName lastName email role status',
+  },
+  {
+    path: 'projectLead',
     select: 'firstName lastName email role status',
   },
   {

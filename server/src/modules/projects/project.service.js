@@ -1,25 +1,32 @@
 import { AppError } from '../../shared/errors/app-error.js';
-import { PROJECT_STATUS } from './project.constants.js';
+
+import {
+  PROJECT_STATUS,
+  PROJECT_STATUS_TRANSITIONS,
+} from './project.constants.js';
 import { Project } from './project.model.js';
 import {
+  isAdmin,
   canManageProject,
   canViewProject,
   getProjectVisibilityFilter,
 } from './project.permissions.js';
-import {
-  cleanProjectName,
-  escapeRegex,
-  getProjectSortOption,
-  projectPopulateOptions,
-  validateActiveUsers,
-  validateProjectDates,
-} from './project.utils.js';
 import {
   ensureProjectNameIsAvailable,
   hasField,
   getChangedProjectFields,
   haveSameProjectMembers,
 } from './project.service.helpers.js';
+import {
+  cleanProjectName,
+  escapeRegex,
+  getProjectSortOption,
+  projectPopulateOptions,
+  isSameId,
+  validateActiveUsers,
+  validateProjectLead,
+  validateProjectDates,
+} from './project.utils.js';
 
 export const initializeProject = async ({
   currentUser,
@@ -49,6 +56,7 @@ export const initializeProject = async ({
     startDate,
     dueDate,
     members: memberIds,
+    projectLead: currentUser._id,
     createdBy: currentUser._id,
   });
 
@@ -89,9 +97,9 @@ export const findProjects = async ({
     });
   }
 
-  if (status) {
-    conditions.push({ status });
-  }
+  conditions.push({
+    status: status ?? { $ne: PROJECT_STATUS.ARCHIVED },
+  });
 
   if (priority) {
     conditions.push({ priority });
@@ -163,7 +171,7 @@ export const updateProjectDetails = async ({
   }
 
   if (project.status === PROJECT_STATUS.ARCHIVED) {
-    throw new AppError('Archived projects cannot be updated', 400);
+    throw new AppError('Archived projects cannot be updated', 409);
   }
 
   const changes = await getChangedProjectFields({
@@ -238,7 +246,68 @@ export const changeProjectStatus = async ({
     };
   }
 
+  const allowedTransitions = PROJECT_STATUS_TRANSITIONS[project.status] ?? [];
+
+  if (!allowedTransitions.includes(status)) {
+    throw new AppError(
+      `Project status cannot change from ${project.status} to ${status}`,
+      409,
+    );
+  }
+
   project.status = status;
+
+  await project.save();
+
+  const populatedProject = await Project.findById(project._id).populate(
+    projectPopulateOptions,
+  );
+
+  return {
+    project: populatedProject,
+    changed: true,
+  };
+};
+
+export const changeProjectLead = async ({
+  projectId,
+  projectLeadId,
+  currentUser,
+}) => {
+  const project = await Project.findById(projectId);
+
+  if (!project) {
+    throw new AppError('Project not found', 404);
+  }
+
+  if (
+    !isAdmin(currentUser) &&
+    !isSameId(project.projectLead, currentUser._id)
+  ) {
+    throw new AppError(
+      'Only an admin or the current project lead can change the project lead',
+      403,
+    );
+  }
+
+  if (project.status === PROJECT_STATUS.ARCHIVED) {
+    throw new AppError('Archived project lead cannot be updated', 409);
+  }
+
+  if (isSameId(project.projectLead, projectLeadId)) {
+    const populatedProject = await Project.findById(project._id).populate(
+      projectPopulateOptions,
+    );
+
+    return {
+      project: populatedProject,
+      changed: false,
+    };
+  }
+
+  const validatedProjectLeadId = await validateProjectLead(projectLeadId);
+
+  project.projectLead = validatedProjectLeadId;
 
   await project.save();
 

@@ -12,7 +12,7 @@ export const isProjectMember = (project, user) => {
 export const canManageProject = (project, user) => {
   if (isAdmin(user)) return true;
 
-  return isManager(user) && isSameId(project.createdBy, user._id);
+  return isManager(user) && isSameId(project.projectLead, user._id);
 };
 
 export const canViewProject = (project, user) => {
@@ -32,7 +32,7 @@ export const getProjectVisibilityFilter = (user) => {
 
   if (isManager(user)) {
     return {
-      $or: [{ createdBy: user._id }, { members: user._id }],
+      $or: [{ projectLead: user._id }, { members: user._id }],
     };
   }
 

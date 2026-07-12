@@ -5,7 +5,7 @@ import {
   PROJECT_STATUS_VALUES,
 } from './project.constants.js';
 
-const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ID');
+const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid User ID');
 
 const projectDateSchema = z.coerce.date({
   invalid_type_error: 'Invalid date format',
@@ -84,6 +84,18 @@ export const updateProjectStatusSchema = z.object({
     .strict(),
 });
 
+export const updateProjectLeadSchema = z.object({
+  params: z.object({
+    projectId: objectIdSchema,
+  }),
+
+  body: z
+    .object({
+      projectLead: objectIdSchema,
+    })
+    .strict(),
+});
+
 export const updateProjectMembersSchema = z.object({
   params: z.object({
     projectId: objectIdSchema,
@@ -91,7 +103,7 @@ export const updateProjectMembersSchema = z.object({
 
   body: z
     .object({
-      members: z.array(objectIdSchema).default([]),
+      members: z.array(objectIdSchema),
     })
     .strict(),
 });
