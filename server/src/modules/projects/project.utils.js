@@ -40,11 +40,14 @@ export const validateActiveUsers = async (userIds) => {
   const activeUsersCount = await User.countDocuments({
     _id: { $in: uniqueUserIds },
     status: USER_STATUS.ACTIVE,
+    role: {
+      $in: [USER_ROLES.MANAGER, USER_ROLES.EMPLOYEE],
+    },
   });
 
   if (activeUsersCount !== uniqueUserIds.length) {
     throw new AppError(
-      'One or more project members are invalid or inactive',
+      'Project members must be active managers or employees',
       400,
     );
   }
@@ -56,13 +59,11 @@ export const validateProjectLead = async (userId) => {
   const projectLead = await User.findOne({
     _id: userId,
     status: USER_STATUS.ACTIVE,
-    role: {
-      $in: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
-    },
+    role: USER_ROLES.MANAGER,
   }).select('_id');
 
   if (!projectLead) {
-    throw new AppError('Project lead must be an active admin or manager', 400);
+    throw new AppError('Project lead must be an active manager', 400);
   }
 
   return projectLead._id;
