@@ -22,6 +22,7 @@ import {
   escapeRegex,
   getProjectSortOption,
   projectPopulateOptions,
+  getUniqueIds,
   isSameId,
   validateActiveUsers,
   validateProjectLead,
@@ -36,6 +37,7 @@ export const initializeProject = async ({
   priority,
   startDate,
   dueDate,
+  projectLeadId,
   members = [],
 }) => {
   validateProjectDates({ startDate, dueDate });
@@ -46,7 +48,12 @@ export const initializeProject = async ({
     name: cleanedName,
   });
 
-  const memberIds = await validateActiveUsers(members);
+  const [validatedProjectLeadId, memberIds] = await Promise.all([
+    validateProjectLead(projectLeadId),
+    validateActiveUsers(members),
+  ]);
+
+  const projectMemberIds = getUniqueIds([...memberIds, validatedProjectLeadId]);
 
   const project = await Project.create({
     name,
@@ -55,8 +62,8 @@ export const initializeProject = async ({
     priority,
     startDate,
     dueDate,
-    members: memberIds,
-    projectLead: currentUser._id,
+    members: projectMemberIds,
+    projectLead: validatedProjectLeadId,
     createdBy: currentUser._id,
   });
 
@@ -309,6 +316,8 @@ export const changeProjectLead = async ({
 
   project.projectLead = validatedProjectLeadId;
 
+  project.members = getUniqueIds([...project.members, validatedProjectLeadId]);
+
   await project.save();
 
   const populatedProject = await Project.findById(project._id).populate(
@@ -345,7 +354,9 @@ export const assignProjectMembers = async ({
 
   const memberIds = await validateActiveUsers(members);
 
-  if (haveSameProjectMembers(project.members, memberIds)) {
+  const nextMemberIds = getUniqueIds([...memberIds, project.projectLead]);
+
+  if (haveSameProjectMembers(project.members, nextMemberIds)) {
     const populatedProject = await Project.findById(project._id).populate(
       projectPopulateOptions,
     );
@@ -356,7 +367,7 @@ export const assignProjectMembers = async ({
     };
   }
 
-  project.members = memberIds;
+  project.members = nextMemberIds;
 
   await project.save();
 

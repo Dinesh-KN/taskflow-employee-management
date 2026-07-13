@@ -30,6 +30,11 @@ export const createProjectSchema = z.object({
       priority: z.enum(PROJECT_PRIORITY_VALUES).optional(),
       startDate: projectDateSchema.optional(),
       dueDate: projectDateSchema.optional(),
+      projectLeadId: objectIdSchema
+        .optional()
+        .refine((value) => value !== undefined, {
+          message: 'Project lead is required',
+        }),
       members: z.array(objectIdSchema).optional(),
     })
     .strict()
