@@ -1,34 +1,31 @@
 import { AppError } from '../../shared/errors/app-error.js';
-import { TASK_STATUS } from './task.constants.js';
 
+import { TASK_STATUS } from './task.constants.js';
 import { Task } from './task.model.js';
 import {
-  canEmployeeUpdateStatus,
-  canManageTaskStatusTransition,
+  isManager,
+  isEmployee,
   canManageProjectTasks,
   canViewProjectTasks,
   canViewTask,
-  isEmployee,
-  isManager,
+  canEmployeeUpdateStatus,
+  canTransitionTaskStatus,
 } from './task.permissions.js';
 import {
-  applyTaskStatus,
-  assertProjectCanAcceptTasks,
-  assertTaskCanBeUpdated,
-  getChangedTaskFields,
-  getPopulatedTaskById,
   getProjectByIdOrFail,
   getTaskByIdOrFail,
   getVisibleProjectIdsForUser,
-  validateActiveProjectAssignee,
+  assertProjectCanAcceptTasks,
+  assertTaskCanBeUpdated,
   validateTaskDueDate,
+  validateActiveProjectAssignee,
+  getChangedTaskFields,
+  applyTaskStatus,
+  getPopulatedTaskById,
 } from './task.service.helpers.js';
-import {
-  escapeRegex,
-  getTaskSortOption,
-  isSameId,
-  taskPopulateOptions,
-} from './task.utils.js';
+import { escapeRegex } from '../../shared/utils/string.utils.js';
+import { isSameId } from '../../shared/utils/id.utils.js';
+import { getTaskSortOption, taskPopulateOptions } from './task.utils.js';
 
 export const initializeTask = async ({
   currentUser,
@@ -325,7 +322,7 @@ export const changeTaskStatus = async ({ taskId, currentUser, status }) => {
   }
 
   if (canManageStatus) {
-    if (!canManageTaskStatusTransition(task.status, status)) {
+    if (!canTransitionTaskStatus(task.status, status)) {
       throw new AppError(
         `Task status cannot change from ${task.status} to ${status}`,
         409,
