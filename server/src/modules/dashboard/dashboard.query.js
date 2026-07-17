@@ -1,16 +1,18 @@
 import { User } from '../users/user.model.js';
 import { Project } from '../projects/project.model.js';
-
-import { TASK_STATUS } from '../tasks/task.constants.js';
 import { Task } from '../tasks/task.model.js';
 
 import {
-  ACTIVE_TASK_EXCLUDED_STATUSES,
-  toCountMap,
+  projectPopulateOptions,
+  taskPopulateOptions,
 } from './dashboard.utils.js';
 
+export const countDocuments = async (Model, filter = {}) => {
+  return Model.countDocuments(filter);
+};
+
 export const countByField = async (Model, field, filter = {}) => {
-  const rows = await Model.aggregate([
+  return Model.aggregate([
     {
       $match: filter,
     },
@@ -22,142 +24,157 @@ export const countByField = async (Model, field, filter = {}) => {
         },
       },
     },
-    {
-      $sort: {
-        _id: 1,
-      },
-    },
   ]);
-
-  return toCountMap(rows);
 };
 
-export const getOverdueTaskFilter = (extraFilter = {}) => {
-  return {
-    ...extraFilter,
-    dueDate: {
-      $lt: new Date(),
-    },
-    status: {
-      $nin: ACTIVE_TASK_EXCLUDED_STATUSES,
-    },
-  };
+export const findProjectIds = async (filter = {}) => {
+  return Project.find(filter).distinct('_id');
 };
 
-export const getUpcomingTaskFilter = ({ upcomingDays, extraFilter = {} }) => {
-  const now = new Date();
-  const upcomingUntil = new Date(now);
-
-  upcomingUntil.setDate(upcomingUntil.getDate() + upcomingDays);
-
-  return {
-    ...extraFilter,
-    dueDate: {
-      $gte: now,
-      $lte: upcomingUntil,
-    },
-    status: {
-      $nin: ACTIVE_TASK_EXCLUDED_STATUSES,
-    },
-  };
+export const findRecentProjects = async ({ filter = {}, limit }) => {
+  return Project.find(filter)
+    .populate(projectPopulateOptions)
+    .sort({
+      createdAt: -1,
+    })
+    .limit(limit);
 };
 
-export const getManagerProjectFilter = (currentUser) => {
-  const conditions = [
-    { createdBy: currentUser._id },
-    { members: currentUser._id },
-  ];
-
-  if (Project.schema.path('projectLead')) {
-    conditions.push({ projectLead: currentUser._id });
-  }
-
-  return {
-    $or: conditions,
-  };
+export const findRecentTasks = async ({ filter = {}, limit }) => {
+  return Task.find(filter)
+    .populate(taskPopulateOptions)
+    .sort({
+      createdAt: -1,
+    })
+    .limit(limit);
 };
 
-export const getManagerProjectIds = async (currentUser) => {
-  const projects = await Project.find(
-    getManagerProjectFilter(currentUser),
-  ).select('_id');
-
-  return projects.map((project) => project._id);
+export const findOverdueTasks = async ({ filter = {}, limit }) => {
+  return Task.find(filter)
+    .populate(taskPopulateOptions)
+    .sort({
+      dueDate: 1,
+    })
+    .limit(limit);
 };
 
-export const getWorkloadByAssignee = async (projectIds) => {
+export const findUpcomingTasks = async ({ filter = {}, limit }) => {
+  return Task.find(filter)
+    .populate(taskPopulateOptions)
+    .sort({
+      dueDate: 1,
+    })
+    .limit(limit);
+};
+
+export const getWorkloadByAssignee = async (taskFilter = {}) => {
   const workloadRows = await Task.aggregate([
     {
-      $match: {
-        project: {
-          $in: projectIds,
-        },
-        status: {
-          $ne: TASK_STATUS.ARCHIVED,
-        },
-      },
+      $match: taskFilter,
     },
     {
       $group: {
         _id: '$assignedTo',
-        totalTasks: {
+
+        total: {
           $sum: 1,
         },
+
         todo: {
           $sum: {
-            $cond: [{ $eq: ['$status', TASK_STATUS.TODO] }, 1, 0],
+            $cond: [
+              {
+                $eq: ['$status', 'todo'],
+              },
+              1,
+              0,
+            ],
           },
         },
+
         inProgress: {
           $sum: {
-            $cond: [{ $eq: ['$status', TASK_STATUS.IN_PROGRESS] }, 1, 0],
+            $cond: [
+              {
+                $eq: ['$status', 'in_progress'],
+              },
+              1,
+              0,
+            ],
           },
         },
+
         inReview: {
           $sum: {
-            $cond: [{ $eq: ['$status', TASK_STATUS.IN_REVIEW] }, 1, 0],
+            $cond: [
+              {
+                $eq: ['$status', 'in_review'],
+              },
+              1,
+              0,
+            ],
           },
         },
+
         completed: {
           $sum: {
-            $cond: [{ $eq: ['$status', TASK_STATUS.COMPLETED] }, 1, 0],
+            $cond: [
+              {
+                $eq: ['$status', 'completed'],
+              },
+              1,
+              0,
+            ],
           },
         },
       },
     },
     {
       $sort: {
-        totalTasks: -1,
+        total: -1,
       },
     },
   ]);
 
   const assigneeIds = workloadRows.map((row) => row._id).filter(Boolean);
 
-  const users = await User.find({
+  const assignees = await User.find({
     _id: {
       $in: assigneeIds,
     },
-  }).select('firstName lastName email role status');
+  })
+    .select('firstName lastName email role status')
+    .lean();
 
-  const userMap = users.reduce((acc, user) => {
-    acc[user._id.toString()] = user;
-
-    return acc;
-  }, {});
+  const assigneeMap = new Map(
+    assignees.map((assignee) => [
+      assignee._id.toString(),
+      {
+        id: assignee._id.toString(),
+        firstName: assignee.firstName,
+        lastName: assignee.lastName,
+        fullName: `${assignee.firstName} ${assignee.lastName}`.trim(),
+        email: assignee.email,
+        role: assignee.role,
+        status: assignee.status,
+      },
+    ]),
+  );
 
   return workloadRows.map((row) => {
     const assigneeId = row._id?.toString();
 
     return {
-      assignee: userMap[assigneeId] || {
-        id: assigneeId,
+      assignee: assigneeId ? (assigneeMap.get(assigneeId) ?? null) : null,
+
+      total: row.total,
+
+      byStatus: {
+        todo: row.todo,
+        in_progress: row.inProgress,
+        in_review: row.inReview,
+        completed: row.completed,
       },
-      totalTasks: row.totalTasks,
-      todo: row.todo,
-      inProgress: row.inProgress,
-      inReview: row.inReview,
-      completed: row.completed,
     };
   });
 };
