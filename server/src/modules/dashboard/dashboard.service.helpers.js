@@ -1,4 +1,27 @@
+import { PROJECT_STATUS } from '../projects/project.constants.js';
+import { TASK_STATUS } from '../tasks/task.constants.js';
+
 import { ACTIVE_TASK_EXCLUDED_STATUSES } from './dashboard.constants.js';
+
+export const createActiveProjectFilter = (baseFilter = {}) => {
+  return {
+    ...baseFilter,
+
+    status: {
+      $ne: PROJECT_STATUS.ARCHIVED,
+    },
+  };
+};
+
+export const createActiveTaskFilter = (baseFilter = {}) => {
+  return {
+    ...baseFilter,
+
+    status: {
+      $ne: TASK_STATUS.ARCHIVED,
+    },
+  };
+};
 
 export const createOverdueTaskFilter = ({
   baseFilter = {},
@@ -41,7 +64,7 @@ export const createUpcomingTaskFilter = ({
 };
 
 export const createManagerProjectFilter = (managerId) => {
-  return {
+  return createActiveProjectFilter({
     $or: [
       {
         createdBy: managerId,
@@ -53,7 +76,13 @@ export const createManagerProjectFilter = (managerId) => {
         members: managerId,
       },
     ],
-  };
+  });
+};
+
+export const createEmployeeProjectFilter = (employeeId) => {
+  return createActiveProjectFilter({
+    members: employeeId,
+  });
 };
 
 export const createProjectTaskFilter = (projectIds = []) => {
