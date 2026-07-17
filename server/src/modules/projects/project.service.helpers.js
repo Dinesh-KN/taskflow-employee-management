@@ -1,6 +1,11 @@
 import { AppError } from '../../shared/errors/app-error.js';
+
 import { Project } from './project.model.js';
 import { cleanProjectName, normalizeProjectName } from './project.utils.js';
+import { areDatesEqual } from '../../shared/utils/date.utils.js';
+import { hasField } from '../../shared/utils/object.utils.js';
+
+export { hasField };
 
 export const ensureProjectNameIsAvailable = async ({
   name,
@@ -25,21 +30,20 @@ export const ensureProjectNameIsAvailable = async ({
   return normalizedName;
 };
 
-export const hasField = (object, field) => {
-  return Object.prototype.hasOwnProperty.call(object, field);
-};
+export const haveSameProjectMembers = (
+  currentMembers = [],
+  nextMembers = [],
+) => {
+  const currentMemberIds = currentMembers.map(String).sort();
+  const nextMemberIds = nextMembers.map(String).sort();
 
-const toDateTime = (value) => {
-  if (!value) return null;
+  if (currentMemberIds.length !== nextMemberIds.length) {
+    return false;
+  }
 
-  const date = new Date(value);
-  const time = date.getTime();
-
-  return Number.isNaN(time) ? null : time;
-};
-
-export const areDatesEqual = (currentValue, nextValue) => {
-  return toDateTime(currentValue) === toDateTime(nextValue);
+  return currentMemberIds.every((memberId, index) => {
+    return memberId === nextMemberIds[index];
+  });
 };
 
 export const getChangedProjectFields = async ({ project, updateData }) => {
@@ -88,20 +92,4 @@ export const getChangedProjectFields = async ({ project, updateData }) => {
   }
 
   return changes;
-};
-
-export const haveSameProjectMembers = (
-  currentMembers = [],
-  nextMembers = [],
-) => {
-  const currentMemberIds = currentMembers.map(String).sort();
-  const nextMemberIds = nextMembers.map(String).sort();
-
-  if (currentMemberIds.length !== nextMemberIds.length) {
-    return false;
-  }
-
-  return currentMemberIds.every((memberId, index) => {
-    return memberId === nextMemberIds[index];
-  });
 };

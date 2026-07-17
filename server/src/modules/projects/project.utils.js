@@ -14,18 +14,6 @@ export const normalizeProjectName = (name = '') => {
   return cleanProjectName(name).toLowerCase();
 };
 
-export const escapeRegex = (value) => {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-};
-
-export const getId = (value) => {
-  return value?._id?.toString?.() || value?.toString();
-};
-
-export const isSameId = (firstId, secondId) => {
-  return getId(firstId) === getId(secondId);
-};
-
 export const getUniqueIds = (ids = []) => {
   return [...new Set(ids.map((id) => id.toString()))];
 };
@@ -75,6 +63,19 @@ export const validateProjectDates = ({ startDate, dueDate }) => {
   }
 };
 
+export const getProjectSortOption = (sort) => {
+  const sortOptions = {
+    createdAt: { createdAt: 1 },
+    '-createdAt': { createdAt: -1 },
+    dueDate: { dueDate: 1 },
+    '-dueDate': { dueDate: -1 },
+    name: { name: 1 },
+    '-name': { name: -1 },
+  };
+
+  return sortOptions[sort] || { createdAt: -1 };
+};
+
 export const projectPopulateOptions = [
   {
     path: 'createdBy',
@@ -89,16 +90,3 @@ export const projectPopulateOptions = [
     select: 'firstName lastName email role status',
   },
 ];
-
-export const getProjectSortOption = (sort) => {
-  const sortOptions = {
-    createdAt: { createdAt: 1 },
-    '-createdAt': { createdAt: -1 },
-    dueDate: { dueDate: 1 },
-    '-dueDate': { dueDate: -1 },
-    name: { name: 1 },
-    '-name': { name: -1 },
-  };
-
-  return sortOptions[sort] || { createdAt: -1 };
-};

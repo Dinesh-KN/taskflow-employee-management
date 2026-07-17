@@ -1,3 +1,5 @@
+import { createStatusTransitions } from '../../shared/utils/create-status-transitions.js';
+
 export const PROJECT_STATUS = {
   PLANNING: 'planning',
   ACTIVE: 'active',
@@ -17,7 +19,7 @@ export const PROJECT_PRIORITY = {
 
 export const PROJECT_PRIORITY_VALUES = Object.values(PROJECT_PRIORITY);
 
-export const PROJECT_STATUS_TRANSITIONS = Object.freeze({
+export const PROJECT_STATUS_TRANSITIONS = createStatusTransitions({
   [PROJECT_STATUS.PLANNING]: [PROJECT_STATUS.ACTIVE, PROJECT_STATUS.ARCHIVED],
 
   [PROJECT_STATUS.ACTIVE]: [

@@ -1,8 +1,8 @@
 import express from 'express';
 
 import { validate } from '../../middleware/validate.middleware.js';
-import { USER_ROLES } from '../../shared/constants/user.constants.js';
 import { authenticate, authorize } from '../auth/auth.middleware.js';
+import { USER_ROLES } from '../../shared/constants/user.constants.js';
 import {
   createProject,
   listProjects,
