@@ -1,15 +1,19 @@
 import {
-  getAdminDashboard,
-  getEmployeeDashboard,
-  getManagerDashboard,
+  buildAdminDashboard,
+  buildManagerDashboard,
+  buildEmployeeDashboard,
 } from './dashboard.service.js';
 
-export const getAdminDashboardController = async (req, res) => {
-  const dashboard = await getAdminDashboard({
-    ...req.validated.query,
-  });
+const getValidatedQuery = (req) => {
+  return req.validated?.query ?? req.query ?? {};
+};
 
-  res.status(200).json({
+export const getAdminDashboard = async (req, res) => {
+  const query = getValidatedQuery(req);
+
+  const dashboard = await buildAdminDashboard(query);
+
+  return res.status(200).json({
     success: true,
     message: 'Admin dashboard fetched successfully',
     data: {
@@ -18,13 +22,12 @@ export const getAdminDashboardController = async (req, res) => {
   });
 };
 
-export const getManagerDashboardController = async (req, res) => {
-  const dashboard = await getManagerDashboard({
-    currentUser: req.user,
-    ...req.validated.query,
-  });
+export const getManagerDashboard = async (req, res) => {
+  const query = getValidatedQuery(req);
 
-  res.status(200).json({
+  const dashboard = await buildManagerDashboard(req.user, query);
+
+  return res.status(200).json({
     success: true,
     message: 'Manager dashboard fetched successfully',
     data: {
@@ -33,13 +36,12 @@ export const getManagerDashboardController = async (req, res) => {
   });
 };
 
-export const getEmployeeDashboardController = async (req, res) => {
-  const dashboard = await getEmployeeDashboard({
-    currentUser: req.user,
-    ...req.validated.query,
-  });
+export const getEmployeeDashboard = async (req, res) => {
+  const query = getValidatedQuery(req);
 
-  res.status(200).json({
+  const dashboard = await buildEmployeeDashboard(req.user, query);
+
+  return res.status(200).json({
     success: true,
     message: 'Employee dashboard fetched successfully',
     data: {

@@ -1,10 +1,3 @@
-import { TASK_STATUS } from '../tasks/task.constants.js';
-
-export const ACTIVE_TASK_EXCLUDED_STATUSES = [
-  TASK_STATUS.COMPLETED,
-  TASK_STATUS.ARCHIVED,
-];
-
 export const taskPopulateOptions = [
   {
     path: 'project',
@@ -26,17 +19,31 @@ export const projectPopulateOptions = [
     select: 'firstName lastName email role status',
   },
   {
+    path: 'projectLead',
+    select: 'firstName lastName email role status',
+  },
+  {
     path: 'members',
     select: 'firstName lastName email role status',
   },
 ];
 
-export const toCountMap = (rows) => {
-  return rows.reduce((acc, row) => {
-    const key = row._id || 'unknown';
+export const toCountMap = (rows = []) => {
+  return rows.reduce((countMap, row) => {
+    if (row._id !== null && row._id !== undefined) {
+      countMap[row._id] = row.count;
+    }
 
-    acc[key] = row.count;
+    return countMap;
+  }, {});
+};
 
-    return acc;
+export const createStatusCountMap = (rows = [], supportedStatuses = []) => {
+  const countMap = toCountMap(rows);
+
+  return supportedStatuses.reduce((statusCounts, status) => {
+    statusCounts[status] = countMap[status] ?? 0;
+
+    return statusCounts;
   }, {});
 };
