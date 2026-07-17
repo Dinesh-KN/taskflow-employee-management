@@ -1,248 +1,326 @@
-import { User } from '../users/user.model.js';
 import { Project } from '../projects/project.model.js';
-
-import { TASK_STATUS } from '../tasks/task.constants.js';
 import { Task } from '../tasks/task.model.js';
+import { User } from '../users/user.model.js';
+
+import {
+  ACTIVE_TASK_EXCLUDED_STATUSES,
+  DASHBOARD_DEFAULTS,
+  DASHBOARD_TASK_STATUS_KEYS,
+} from './dashboard.constants.js';
 
 import {
   countByField,
-  getOverdueTaskFilter,
-  getUpcomingTaskFilter,
-  getManagerProjectFilter,
-  getManagerProjectIds,
+  countDocuments,
+  findOverdueTasks,
+  findProjectIds,
+  findRecentProjects,
+  findRecentTasks,
+  findUpcomingTasks,
   getWorkloadByAssignee,
 } from './dashboard.query.js';
+
+import { createStatusCountMap, toCountMap } from './dashboard.utils.js';
+
 import {
-  projectPopulateOptions,
-  taskPopulateOptions,
-} from './dashboard.utils.js';
+  createOverdueTaskFilter,
+  createUpcomingTaskFilter,
+  createManagerProjectFilter,
+  createProjectTaskFilter,
+} from './dashboard.service.helpers.js';
 
-export const getAdminDashboard = async ({ recentLimit }) => {
-  const overdueTaskFilter = getOverdueTaskFilter();
+export const buildAdminDashboard = async ({
+  recentLimit = DASHBOARD_DEFAULTS.RECENT_LIMIT,
+} = {}) => {
+  const now = new Date();
 
-  const [
-    totalUsers,
-    usersByRole,
-    usersByStatus,
-    totalProjects,
-    projectsByStatus,
-    totalTasks,
-    tasksByStatus,
-    overdueTasksCount,
-    overdueTasks,
-    recentlyCreatedProjects,
-    recentlyCreatedTasks,
-  ] = await Promise.all([
-    User.countDocuments(),
-    countByField(User, 'role'),
-    countByField(User, 'status'),
-
-    Project.countDocuments(),
-    countByField(Project, 'status'),
-
-    Task.countDocuments(),
-    countByField(Task, 'status'),
-
-    Task.countDocuments(overdueTaskFilter),
-
-    Task.find(overdueTaskFilter)
-      .populate(taskPopulateOptions)
-      .sort({
-        dueDate: 1,
-      })
-      .limit(recentLimit),
-
-    Project.find()
-      .populate(projectPopulateOptions)
-      .sort({
-        createdAt: -1,
-      })
-      .limit(recentLimit),
-
-    Task.find()
-      .populate(taskPopulateOptions)
-      .sort({
-        createdAt: -1,
-      })
-      .limit(recentLimit),
-  ]);
-
-  return {
-    summary: {
-      users: {
-        total: totalUsers,
-        byRole: usersByRole,
-        byStatus: usersByStatus,
-      },
-      projects: {
-        total: totalProjects,
-        byStatus: projectsByStatus,
-      },
-      tasks: {
-        total: totalTasks,
-        byStatus: tasksByStatus,
-        overdue: overdueTasksCount,
-      },
-    },
-    overdueTasks,
-    recentlyCreatedProjects,
-    recentlyCreatedTasks,
-  };
-};
-
-export const getManagerDashboard = async ({
-  currentUser,
-  upcomingDays,
-  limit,
-}) => {
-  const projectFilter = getManagerProjectFilter(currentUser);
-  const projectIds = await getManagerProjectIds(currentUser);
-
-  const taskProjectFilter = {
-    project: {
-      $in: projectIds,
-    },
-  };
-
-  const overdueTaskFilter = getOverdueTaskFilter(taskProjectFilter);
-
-  const upcomingTaskFilter = getUpcomingTaskFilter({
-    upcomingDays,
-    extraFilter: taskProjectFilter,
+  const overdueTaskFilter = createOverdueTaskFilter({
+    now,
   });
 
   const [
-    projects,
-    projectsByStatus,
+    totalUsers,
+    usersByRoleRows,
+    usersByStatusRows,
+
+    totalProjects,
+    projectsByStatusRows,
+
     totalTasks,
-    tasksByStatus,
-    overdueTasksCount,
-    overdueTasks,
-    upcomingTasks,
-    workloadByAssignee,
+    tasksByStatusRows,
+
+    overdueTaskTotal,
+
+    recentProjects,
+    recentTasks,
   ] = await Promise.all([
-    Project.find(projectFilter).populate(projectPopulateOptions).sort({
-      createdAt: -1,
+    countDocuments(User),
+
+    countByField(User, 'role'),
+
+    countByField(User, 'status'),
+
+    countDocuments(Project),
+
+    countByField(Project, 'status'),
+
+    countDocuments(Task),
+
+    countByField(Task, 'status'),
+
+    countDocuments(Task, overdueTaskFilter),
+
+    findRecentProjects({
+      limit: recentLimit,
     }),
 
-    countByField(Project, 'status', projectFilter),
-
-    Task.countDocuments(taskProjectFilter),
-
-    countByField(Task, 'status', taskProjectFilter),
-
-    Task.countDocuments(overdueTaskFilter),
-
-    Task.find(overdueTaskFilter)
-      .populate(taskPopulateOptions)
-      .sort({
-        dueDate: 1,
-      })
-      .limit(limit),
-
-    Task.find(upcomingTaskFilter)
-      .populate(taskPopulateOptions)
-      .sort({
-        dueDate: 1,
-      })
-      .limit(limit),
-
-    getWorkloadByAssignee(projectIds),
+    findRecentTasks({
+      limit: recentLimit,
+    }),
   ]);
 
   return {
-    summary: {
-      projects: {
-        total: projects.length,
-        byStatus: projectsByStatus,
-      },
-      tasks: {
-        total: totalTasks,
-        byStatus: tasksByStatus,
-        overdue: overdueTasksCount,
-      },
+    userSummary: {
+      total: totalUsers,
+      byRole: toCountMap(usersByRoleRows),
+      byStatus: toCountMap(usersByStatusRows),
     },
-    projects,
+
+    projectSummary: {
+      total: totalProjects,
+      byStatus: toCountMap(projectsByStatusRows),
+    },
+
+    taskSummary: {
+      total: totalTasks,
+
+      byStatus: createStatusCountMap(
+        tasksByStatusRows,
+        DASHBOARD_TASK_STATUS_KEYS,
+      ),
+
+      overdue: overdueTaskTotal,
+    },
+
+    recentProjects: {
+      limit: recentLimit,
+      items: recentProjects,
+    },
+
+    recentTasks: {
+      limit: recentLimit,
+      items: recentTasks,
+    },
+  };
+};
+
+export const buildManagerDashboard = async (
+  currentUser,
+  {
+    upcomingDays = DASHBOARD_DEFAULTS.UPCOMING_DAYS,
+    limit = DASHBOARD_DEFAULTS.LIST_LIMIT,
+  } = {},
+) => {
+  const now = new Date();
+
+  const managerProjectFilter = createManagerProjectFilter(currentUser._id);
+
+  const projectIds = await findProjectIds(managerProjectFilter);
+
+  const projectTaskFilter = createProjectTaskFilter(projectIds);
+
+  const overdueTaskFilter = createOverdueTaskFilter({
+    baseFilter: projectTaskFilter,
+    now,
+  });
+
+  const upcomingTaskFilter = createUpcomingTaskFilter({
+    baseFilter: projectTaskFilter,
+    now,
+    upcomingDays,
+  });
+
+  const [
+    totalProjects,
+    projectsByStatusRows,
+
+    totalTasks,
+    tasksByStatusRows,
+
+    overdueTaskTotal,
     overdueTasks,
+
+    upcomingTaskTotal,
     upcomingTasks,
+
+    recentProjects,
+    recentTasks,
+
+    workloadByAssignee,
+  ] = await Promise.all([
+    countDocuments(Project, managerProjectFilter),
+
+    countByField(Project, 'status', managerProjectFilter),
+
+    countDocuments(Task, projectTaskFilter),
+
+    countByField(Task, 'status', projectTaskFilter),
+
+    countDocuments(Task, overdueTaskFilter),
+
+    findOverdueTasks({
+      filter: overdueTaskFilter,
+      limit,
+    }),
+
+    countDocuments(Task, upcomingTaskFilter),
+
+    findUpcomingTasks({
+      filter: upcomingTaskFilter,
+      limit,
+    }),
+
+    findRecentProjects({
+      filter: managerProjectFilter,
+      limit,
+    }),
+
+    findRecentTasks({
+      filter: projectTaskFilter,
+      limit,
+    }),
+
+    getWorkloadByAssignee(projectTaskFilter),
+  ]);
+
+  return {
+    projectSummary: {
+      total: totalProjects,
+      byStatus: toCountMap(projectsByStatusRows),
+    },
+
+    taskSummary: {
+      total: totalTasks,
+
+      byStatus: createStatusCountMap(
+        tasksByStatusRows,
+        DASHBOARD_TASK_STATUS_KEYS,
+      ),
+
+      overdue: overdueTaskTotal,
+    },
+
+    overdueTasks: {
+      total: overdueTaskTotal,
+      items: overdueTasks,
+    },
+
+    upcomingTasks: {
+      total: upcomingTaskTotal,
+      windowDays: upcomingDays,
+      items: upcomingTasks,
+    },
+
+    recentProjects: {
+      limit,
+      items: recentProjects,
+    },
+
+    recentTasks: {
+      limit,
+      items: recentTasks,
+    },
+
     workloadByAssignee,
   };
 };
 
-export const getEmployeeDashboard = async ({
+export const buildEmployeeDashboard = async (
   currentUser,
-  upcomingDays,
-  limit,
-}) => {
+  {
+    upcomingDays = DASHBOARD_DEFAULTS.UPCOMING_DAYS,
+    limit = DASHBOARD_DEFAULTS.LIST_LIMIT,
+  } = {},
+) => {
+  const now = new Date();
+
   const assignedTaskFilter = {
     assignedTo: currentUser._id,
   };
 
-  const activeAssignedTaskFilter = {
-    ...assignedTaskFilter,
-    status: {
-      $ne: TASK_STATUS.ARCHIVED,
-    },
-  };
+  const overdueTaskFilter = createOverdueTaskFilter({
+    baseFilter: assignedTaskFilter,
+    now,
+  });
 
-  const overdueTaskFilter = getOverdueTaskFilter(assignedTaskFilter);
-
-  const upcomingTaskFilter = getUpcomingTaskFilter({
+  const upcomingTaskFilter = createUpcomingTaskFilter({
+    baseFilter: assignedTaskFilter,
+    now,
     upcomingDays,
-    extraFilter: assignedTaskFilter,
   });
 
   const [
-    totalAssignedTasks,
-    tasksByStatus,
+    assignedTaskTotal,
+    tasksByStatusRows,
+
     assignedTasks,
-    overdueTasksCount,
+
+    overdueTaskTotal,
     overdueTasks,
+
+    upcomingTaskTotal,
     upcomingTasks,
   ] = await Promise.all([
-    Task.countDocuments(activeAssignedTaskFilter),
+    countDocuments(Task, assignedTaskFilter),
 
     countByField(Task, 'status', assignedTaskFilter),
 
-    Task.find(activeAssignedTaskFilter)
-      .populate(taskPopulateOptions)
-      .sort({
-        dueDate: 1,
-        createdAt: -1,
-      })
-      .limit(limit),
+    findRecentTasks({
+      filter: assignedTaskFilter,
+      limit,
+    }),
 
-    Task.countDocuments(overdueTaskFilter),
+    countDocuments(Task, overdueTaskFilter),
 
-    Task.find(overdueTaskFilter)
-      .populate(taskPopulateOptions)
-      .sort({
-        dueDate: 1,
-      })
-      .limit(limit),
+    findOverdueTasks({
+      filter: overdueTaskFilter,
+      limit,
+    }),
 
-    Task.find(upcomingTaskFilter)
-      .populate(taskPopulateOptions)
-      .sort({
-        dueDate: 1,
-      })
-      .limit(limit),
+    countDocuments(Task, upcomingTaskFilter),
+
+    findUpcomingTasks({
+      filter: upcomingTaskFilter,
+      limit,
+    }),
   ]);
 
   return {
-    summary: {
-      assignedTasks: {
-        total: totalAssignedTasks,
-        byStatus: tasksByStatus,
-        todo: tasksByStatus[TASK_STATUS.TODO] || 0,
-        inProgress: tasksByStatus[TASK_STATUS.IN_PROGRESS] || 0,
-        inReview: tasksByStatus[TASK_STATUS.IN_REVIEW] || 0,
-        completed: tasksByStatus[TASK_STATUS.COMPLETED] || 0,
-        overdue: overdueTasksCount,
-      },
+    taskSummary: {
+      total: assignedTaskTotal,
+
+      byStatus: createStatusCountMap(
+        tasksByStatusRows,
+        DASHBOARD_TASK_STATUS_KEYS,
+      ),
+
+      overdue: overdueTaskTotal,
     },
-    assignedTasks,
-    overdueTasks,
-    upcomingTasks,
+
+    assignedTasks: {
+      total: assignedTaskTotal,
+      limit,
+      items: assignedTasks,
+    },
+
+    overdueTasks: {
+      total: overdueTaskTotal,
+      items: overdueTasks,
+    },
+
+    upcomingTasks: {
+      total: upcomingTaskTotal,
+      windowDays: upcomingDays,
+      items: upcomingTasks,
+    },
   };
 };
