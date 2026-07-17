@@ -3,7 +3,6 @@ import { Task } from '../tasks/task.model.js';
 import { User } from '../users/user.model.js';
 
 import {
-  ACTIVE_TASK_EXCLUDED_STATUSES,
   DASHBOARD_DEFAULTS,
   DASHBOARD_TASK_STATUS_KEYS,
 } from './dashboard.constants.js';
@@ -22,6 +21,9 @@ import {
 import { createStatusCountMap, toCountMap } from './dashboard.utils.js';
 
 import {
+  createActiveProjectFilter,
+  createActiveTaskFilter,
+  createEmployeeProjectFilter,
   createOverdueTaskFilter,
   createUpcomingTaskFilter,
   createManagerProjectFilter,
@@ -33,7 +35,16 @@ export const buildAdminDashboard = async ({
 } = {}) => {
   const now = new Date();
 
+  const activeProjectFilter = createActiveProjectFilter();
+
+  const activeProjectIds = await findProjectIds(activeProjectFilter);
+
+  const projectTaskFilter = createProjectTaskFilter(activeProjectIds);
+
+  const activeProjectTaskFilter = createActiveTaskFilter(projectTaskFilter);
+
   const overdueTaskFilter = createOverdueTaskFilter({
+    baseFilter: projectTaskFilter,
     now,
   });
 
@@ -59,21 +70,23 @@ export const buildAdminDashboard = async ({
 
     countByField(User, 'status'),
 
-    countDocuments(Project),
+    countDocuments(Project, activeProjectFilter),
 
-    countByField(Project, 'status'),
+    countByField(Project, 'status', activeProjectFilter),
 
-    countDocuments(Task),
+    countDocuments(Task, activeProjectTaskFilter),
 
-    countByField(Task, 'status'),
+    countByField(Task, 'status', activeProjectTaskFilter),
 
     countDocuments(Task, overdueTaskFilter),
 
     findRecentProjects({
+      filter: activeProjectFilter,
       limit: recentLimit,
     }),
 
     findRecentTasks({
+      filter: activeProjectTaskFilter,
       limit: recentLimit,
     }),
   ]);
@@ -128,6 +141,8 @@ export const buildManagerDashboard = async (
 
   const projectTaskFilter = createProjectTaskFilter(projectIds);
 
+  const activeProjectTaskFilter = createActiveTaskFilter(projectTaskFilter);
+
   const overdueTaskFilter = createOverdueTaskFilter({
     baseFilter: projectTaskFilter,
     now,
@@ -161,9 +176,9 @@ export const buildManagerDashboard = async (
 
     countByField(Project, 'status', managerProjectFilter),
 
-    countDocuments(Task, projectTaskFilter),
+    countDocuments(Task, activeProjectTaskFilter),
 
-    countByField(Task, 'status', projectTaskFilter),
+    countByField(Task, 'status', activeProjectTaskFilter),
 
     countDocuments(Task, overdueTaskFilter),
 
@@ -185,11 +200,11 @@ export const buildManagerDashboard = async (
     }),
 
     findRecentTasks({
-      filter: projectTaskFilter,
+      filter: activeProjectTaskFilter,
       limit,
     }),
 
-    getWorkloadByAssignee(projectTaskFilter),
+    getWorkloadByAssignee(activeProjectTaskFilter),
   ]);
 
   return {
@@ -243,9 +258,16 @@ export const buildEmployeeDashboard = async (
 ) => {
   const now = new Date();
 
-  const assignedTaskFilter = {
+  const employeeProjectFilter = createEmployeeProjectFilter(currentUser._id);
+
+  const employeeProjectIds = await findProjectIds(employeeProjectFilter);
+
+  const projectTaskFilter = createProjectTaskFilter(employeeProjectIds);
+
+  const assignedTaskFilter = createActiveTaskFilter({
+    ...projectTaskFilter,
     assignedTo: currentUser._id,
-  };
+  });
 
   const overdueTaskFilter = createOverdueTaskFilter({
     baseFilter: assignedTaskFilter,
