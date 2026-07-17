@@ -1,13 +1,11 @@
-import { USER_ROLES } from '../../shared/constants/user.constants.js';
-import { isSameId } from './project.utils.js';
+import {
+  isAdmin,
+  isManager,
+  isProjectMember,
+} from '../../shared/permissions/role.permissions.js';
+import { isSameId } from '../../shared/utils/id.utils.js';
 
-export const isAdmin = (user) => user.role === USER_ROLES.ADMIN;
-
-export const isManager = (user) => user.role === USER_ROLES.MANAGER;
-
-export const isProjectMember = (project, user) => {
-  return project.members.some((memberId) => isSameId(memberId, user._id));
-};
+export { isAdmin, isManager, isProjectMember };
 
 export const canManageProject = (project, user) => {
   if (isAdmin(user)) return true;

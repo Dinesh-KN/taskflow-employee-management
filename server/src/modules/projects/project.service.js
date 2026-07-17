@@ -13,21 +13,21 @@ import {
 } from './project.permissions.js';
 import {
   ensureProjectNameIsAvailable,
+  haveSameProjectMembers,
   hasField,
   getChangedProjectFields,
-  haveSameProjectMembers,
 } from './project.service.helpers.js';
+import { escapeRegex } from '../../shared/utils/string.utils.js';
 import {
   cleanProjectName,
-  escapeRegex,
-  getProjectSortOption,
-  projectPopulateOptions,
   getUniqueIds,
-  isSameId,
   validateActiveUsers,
   validateProjectLead,
   validateProjectDates,
+  getProjectSortOption,
+  projectPopulateOptions,
 } from './project.utils.js';
+import { isSameId } from '../../shared/utils/id.utils.js';
 
 export const initializeProject = async ({
   currentUser,

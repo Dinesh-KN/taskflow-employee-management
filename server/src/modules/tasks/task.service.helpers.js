@@ -7,23 +7,9 @@ import { Project } from '../projects/project.model.js';
 import { TASK_STATUS } from './task.constants.js';
 import { Task } from './task.model.js';
 import { isAdmin, isManager, isProjectMember } from './task.permissions.js';
+import { areDatesEqual } from '../../shared/utils/date.utils.js';
+import { hasField } from '../../shared/utils/object.utils.js';
 import { taskPopulateOptions } from './task.utils.js';
-
-export const getVisibleProjectIdsForUser = async (user) => {
-  if (isAdmin(user)) {
-    return null;
-  }
-
-  if (isManager(user)) {
-    const projects = await Project.find({
-      members: user._id,
-    }).select('_id');
-
-    return projects.map((project) => project._id);
-  }
-
-  return null;
-};
 
 export const getProjectByIdOrFail = async (projectId) => {
   const project = await Project.findById(projectId);
@@ -43,6 +29,22 @@ export const getTaskByIdOrFail = async (taskId) => {
   }
 
   return task;
+};
+
+export const getVisibleProjectIdsForUser = async (user) => {
+  if (isAdmin(user)) {
+    return null;
+  }
+
+  if (isManager(user)) {
+    const projects = await Project.find({
+      members: user._id,
+    }).select('_id');
+
+    return projects.map((project) => project._id);
+  }
+
+  return null;
 };
 
 export const assertProjectCanAcceptTasks = (project) => {
@@ -85,51 +87,11 @@ export const validateActiveProjectAssignee = async ({
     throw new AppError('Task assignee is invalid or inactive', 400);
   }
 
-  if (!isProjectMember(project, user._id)) {
+  if (!isProjectMember(project, user)) {
     throw new AppError('Task assignee must be a project member', 400);
   }
 
   return user;
-};
-
-export const applyTaskStatus = (task, status) => {
-  const previousStatus = task.status;
-
-  task.status = status;
-
-  if (status === TASK_STATUS.COMPLETED) {
-    task.completedAt ??= new Date();
-    return;
-  }
-
-  if (status === TASK_STATUS.ARCHIVED) {
-    return;
-  }
-
-  if (previousStatus === TASK_STATUS.COMPLETED) {
-    task.completedAt = null;
-  }
-};
-
-export const getPopulatedTaskById = async (taskId) => {
-  return Task.findById(taskId).populate(taskPopulateOptions);
-};
-
-const hasField = (object, field) => {
-  return Object.prototype.hasOwnProperty.call(object, field);
-};
-
-const toDateTime = (value) => {
-  if (!value) return null;
-
-  const date = new Date(value);
-  const time = date.getTime();
-
-  return Number.isNaN(time) ? null : time;
-};
-
-const areDatesEqual = (currentValue, nextValue) => {
-  return toDateTime(currentValue) === toDateTime(nextValue);
 };
 
 export const getChangedTaskFields = ({ task, updateData }) => {
@@ -164,4 +126,27 @@ export const getChangedTaskFields = ({ task, updateData }) => {
   }
 
   return changes;
+};
+
+export const applyTaskStatus = (task, status) => {
+  const previousStatus = task.status;
+
+  task.status = status;
+
+  if (status === TASK_STATUS.COMPLETED) {
+    task.completedAt ??= new Date();
+    return;
+  }
+
+  if (status === TASK_STATUS.ARCHIVED) {
+    return;
+  }
+
+  if (previousStatus === TASK_STATUS.COMPLETED) {
+    task.completedAt = null;
+  }
+};
+
+export const getPopulatedTaskById = async (taskId) => {
+  return Task.findById(taskId).populate(taskPopulateOptions);
 };
