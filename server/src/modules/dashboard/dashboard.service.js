@@ -1,8 +1,8 @@
 import { User } from '../users/user.model.js';
 import { Project } from '../projects/project.model.js';
-import { Task } from '../tasks/task.model.js';
 
 import { TASK_STATUS } from '../tasks/task.constants.js';
+import { Task } from '../tasks/task.model.js';
 
 import {
   countByField,

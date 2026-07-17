@@ -1,7 +1,11 @@
+import { User } from '../users/user.model.js';
+import { Project } from '../projects/project.model.js';
+
+import { TASK_STATUS } from '../tasks/task.constants.js';
+import { Task } from '../tasks/task.model.js';
+
 import {
   ACTIVE_TASK_EXCLUDED_STATUSES,
-  projectPopulateOptions,
-  taskPopulateOptions,
   toCountMap,
 } from './dashboard.utils.js';
 
