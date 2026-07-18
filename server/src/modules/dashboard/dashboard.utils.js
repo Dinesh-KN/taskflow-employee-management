@@ -1,3 +1,18 @@
+export const projectPopulateOptions = [
+  {
+    path: 'createdBy',
+    select: 'firstName lastName email role status avatarImage',
+  },
+  {
+    path: 'projectLead',
+    select: 'firstName lastName email role status avatarImage',
+  },
+  {
+    path: 'members',
+    select: 'firstName lastName email role status avatarImage',
+  },
+];
+
 export const taskPopulateOptions = [
   {
     path: 'project',
@@ -5,26 +20,11 @@ export const taskPopulateOptions = [
   },
   {
     path: 'assignedTo',
-    select: 'firstName lastName email role status',
+    select: 'firstName lastName email role status avatarImage',
   },
   {
     path: 'createdBy',
-    select: 'firstName lastName email role status',
-  },
-];
-
-export const projectPopulateOptions = [
-  {
-    path: 'createdBy',
-    select: 'firstName lastName email role status',
-  },
-  {
-    path: 'projectLead',
-    select: 'firstName lastName email role status',
-  },
-  {
-    path: 'members',
-    select: 'firstName lastName email role status',
+    select: 'firstName lastName email role status avatarImage',
   },
 ];
 
