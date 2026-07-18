@@ -10,6 +10,13 @@ import {
   USER_STATUS_VALUES,
 } from '../../shared/constants/user.constants.js';
 
+const getUserInitials = (firstName = '', lastName = '') => {
+  const firstInitial = firstName.trim().charAt(0);
+  const lastInitial = lastName.trim().charAt(0);
+
+  return `${firstInitial}${lastInitial}`.toUpperCase() || 'U';
+};
+
 const refreshTokenSchema = new mongoose.Schema(
   {
     tokenHash: {
@@ -84,6 +91,17 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
+    avatarImage: {
+      url: {
+        type: String,
+        default: '',
+      },
+      publicId: {
+        type: String,
+        default: '',
+      },
+    },
+
     refreshTokens: {
       type: [refreshTokenSchema],
       default: [],
@@ -111,6 +129,24 @@ userSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`.trim();
 });
 
+userSchema.virtual('avatar').get(function () {
+  const initials = getUserInitials(this.firstName, this.lastName);
+
+  if (this.avatarImage?.url) {
+    return {
+      source: 'uploaded',
+      url: this.avatarImage.url,
+      initials,
+    };
+  }
+
+  return {
+    source: 'initials',
+    url: null,
+    initials,
+  };
+});
+
 userSchema.set('toJSON', {
   virtuals: true,
   versionKey: false,
@@ -120,6 +156,7 @@ userSchema.set('toJSON', {
     delete ret._id;
     delete ret.password;
     delete ret.refreshTokens;
+    delete ret.avatarImage;
 
     return ret;
   },

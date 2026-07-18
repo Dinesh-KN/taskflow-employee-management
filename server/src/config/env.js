@@ -17,6 +17,9 @@ const requiredEnvVars = [
   'SEED_ADMIN_LAST_NAME',
   'SEED_ADMIN_EMAIL',
   'SEED_ADMIN_PASSWORD',
+  'CLOUDINARY_CLOUD_NAME',
+  'CLOUDINARY_API_KEY',
+  'CLOUDINARY_API_SECRET',
 ];
 
 requiredEnvVars.forEach((key) => {
@@ -48,4 +51,12 @@ export const env = {
   seedAdminLastName: process.env.SEED_ADMIN_LAST_NAME,
   seedAdminEmail: process.env.SEED_ADMIN_EMAIL,
   seedAdminPassword: process.env.SEED_ADMIN_PASSWORD,
+
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    apiSecret: process.env.CLOUDINARY_API_SECRET,
+    profilePhotoFolder:
+      process.env.CLOUDINARY_PROFILE_PHOTO_FOLDER || 'taskflow/avatars',
+  },
 };

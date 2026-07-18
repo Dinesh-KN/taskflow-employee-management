@@ -79,14 +79,14 @@ export const getProjectSortOption = (sort) => {
 export const projectPopulateOptions = [
   {
     path: 'createdBy',
-    select: 'firstName lastName email role status',
+    select: 'firstName lastName email role status avatarImage',
   },
   {
     path: 'projectLead',
-    select: 'firstName lastName email role status',
+    select: 'firstName lastName email role status avatarImage',
   },
   {
     path: 'members',
-    select: 'firstName lastName email role status',
+    select: 'firstName lastName email role status avatarImage',
   },
 ];

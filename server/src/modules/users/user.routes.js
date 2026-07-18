@@ -2,6 +2,7 @@ import express from 'express';
 
 import { validate } from '../../middleware/validate.middleware.js';
 import { authenticate, authorize } from '../auth/auth.middleware.js';
+import { uploadSingleAvatar } from './user.upload.js';
 import { USER_ROLES } from '../../shared/constants/user.constants.js';
 import {
   createUser,
@@ -11,6 +12,8 @@ import {
   updateUserEmail,
   updateUserRole,
   updateUserStatus,
+  updateProfilePhoto,
+  deleteProfilePhoto,
 } from './user.controller.js';
 import {
   createUserSchema,
@@ -25,6 +28,10 @@ import {
 const router = express.Router();
 
 router.use(authenticate);
+
+router.patch('/me/avatar', uploadSingleAvatar, updateProfilePhoto);
+router.delete('/me/avatar', deleteProfilePhoto);
+
 router.use(authorize(USER_ROLES.ADMIN));
 
 router.post('/', validate(createUserSchema), createUser);

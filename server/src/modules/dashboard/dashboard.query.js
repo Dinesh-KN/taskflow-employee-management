@@ -142,9 +142,7 @@ export const getWorkloadByAssignee = async (taskFilter = {}) => {
     _id: {
       $in: assigneeIds,
     },
-  })
-    .select('firstName lastName email role status')
-    .lean();
+  }).select('firstName lastName email role status avatarImage');
 
   const assigneeMap = new Map(
     assignees.map((assignee) => [
@@ -153,10 +151,11 @@ export const getWorkloadByAssignee = async (taskFilter = {}) => {
         id: assignee._id.toString(),
         firstName: assignee.firstName,
         lastName: assignee.lastName,
-        fullName: `${assignee.firstName} ${assignee.lastName}`.trim(),
+        fullName: assignee.fullName,
         email: assignee.email,
         role: assignee.role,
         status: assignee.status,
+        avatar: assignee.avatar,
       },
     ]),
   );
