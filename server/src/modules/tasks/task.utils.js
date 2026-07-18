@@ -18,10 +18,10 @@ export const taskPopulateOptions = [
   },
   {
     path: 'assignedTo',
-    select: 'firstName lastName email role status',
+    select: 'firstName lastName email role status avatarImage',
   },
   {
     path: 'createdBy',
-    select: 'firstName lastName email role status',
+    select: 'firstName lastName email role status avatarImage',
   },
 ];

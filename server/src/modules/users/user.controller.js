@@ -8,6 +8,8 @@ import {
   changeUserEmail,
   changeUserRole,
   changeUserStatus,
+  changeProfilePhoto,
+  removeProfilePhoto,
 } from './user.service.js';
 
 export const createUser = async (req, res) => {
@@ -121,6 +123,39 @@ export const updateUserStatus = async (req, res) => {
     data: {
       user,
       statusChanged,
+    },
+  });
+};
+
+export const updateProfilePhoto = async (req, res) => {
+  const { user, updated } = await changeProfilePhoto({
+    currentUser: req.user,
+    file: req.file,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: updated
+      ? 'Profile photo updated successfully'
+      : 'No changes detected',
+    data: {
+      user,
+    },
+  });
+};
+
+export const deleteProfilePhoto = async (req, res) => {
+  const { user, removed } = await removeProfilePhoto({
+    currentUser: req.user,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: removed
+      ? 'Profile photo removed successfully'
+      : 'No profile photo to remove',
+    data: {
+      user,
     },
   });
 };

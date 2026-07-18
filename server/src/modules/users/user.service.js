@@ -1,6 +1,10 @@
 import { AppError } from '../../shared/errors/app-error.js';
 import { generateTemporaryPassword } from '../../shared/utils/generate-password.js';
 import { User } from './user.model.js';
+import {
+  deleteCloudinaryImage,
+  uploadCloudinaryImage,
+} from './user.service.helpers.js';
 
 export const createUserAccount = async ({
   firstName,
@@ -191,5 +195,87 @@ export const changeUserStatus = async (userId, status) => {
   return {
     user,
     statusChanged: true,
+  };
+};
+
+export const changeProfilePhoto = async ({ currentUser, file }) => {
+  if (!file) {
+    throw new AppError('Profile photo is required', 400);
+  }
+
+  const user = await User.findById(currentUser._id);
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  const previousPublicId = user.avatarImage?.publicId;
+
+  const uploadedPhoto = await uploadCloudinaryImage({
+    buffer: file.buffer,
+    userId: user._id.toString(),
+  });
+
+  user.avatarImage = {
+    url: uploadedPhoto.url,
+    publicId: uploadedPhoto.publicId,
+  };
+
+  await user.save();
+
+  if (previousPublicId) {
+    try {
+      await deleteCloudinaryImage(previousPublicId);
+    } catch (error) {
+      console.warn('Failed to delete old Cloudinary profile photo:', {
+        publicId: previousPublicId,
+        message: error.message,
+      });
+    }
+  }
+
+  return {
+    user,
+    updated: true,
+  };
+};
+
+export const removeProfilePhoto = async ({ currentUser }) => {
+  const user = await User.findById(currentUser._id);
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  const previousPublicId = user.avatarImage?.publicId;
+
+  if (!previousPublicId && !user.avatarImage?.url) {
+    return {
+      user,
+      removed: false,
+    };
+  }
+
+  user.avatarImage = {
+    url: '',
+    publicId: '',
+  };
+
+  await user.save();
+
+  if (previousPublicId) {
+    try {
+      await deleteCloudinaryImage(previousPublicId);
+    } catch (error) {
+      console.warn('Failed to delete old Cloudinary profile photo:', {
+        publicId: previousPublicId,
+        message: error.message,
+      });
+    }
+  }
+
+  return {
+    user,
+    removed: true,
   };
 };
