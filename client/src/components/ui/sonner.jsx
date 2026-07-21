@@ -1,4 +1,4 @@
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/theme/theme-context';
 import { Toaster as Sonner } from 'sonner';
 import {
   CircleCheckIcon,

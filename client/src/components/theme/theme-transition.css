@@ -1,0 +1,17 @@
+/*
+ * Disable the browser's default root cross-fade. The toggle supplies its own
+ * circular clip-path animation for ::view-transition-new(root).
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 0;
+}
+
+::view-transition-new(root) {
+  z-index: 1;
+}
