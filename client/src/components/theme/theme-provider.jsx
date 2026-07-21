@@ -75,8 +75,6 @@ export function ThemeProvider({
       setSystemTheme(event.matches ? THEME.DARK : THEME.LIGHT);
     };
 
-    setSystemTheme(mediaQuery.matches ? THEME.DARK : THEME.LIGHT);
-
     mediaQuery.addEventListener('change', handleSystemThemeChange);
 
     return () => {
